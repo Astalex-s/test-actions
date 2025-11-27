@@ -8,7 +8,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -32,11 +31,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lowercase image name
+        id: image
+        run: |
+          IMAGE_NAME_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=${IMAGE_NAME_LOWER}" >> $GITHUB_OUTPUT
+          echo "Image name: ${IMAGE_NAME_LOWER}"
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-
@@ -69,13 +75,20 @@ jobs:
         run: |
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Set lowercase image name for deploy
+        id: image_deploy
+        run: |
+          IMAGE_NAME_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=${IMAGE_NAME_LOWER}" >> $GITHUB_OUTPUT
+          echo "Image name for deploy: ${IMAGE_NAME_LOWER}"
+
       - name: Deploy to server
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
             set -e
             
             REGISTRY="${{ env.REGISTRY }}"
-            IMAGE_NAME="${{ env.IMAGE_NAME }}"
+            IMAGE_NAME="${{ steps.image_deploy.outputs.name }}"
             GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
             GITHUB_ACTOR="${{ github.actor }}"
             IMAGE_TAG="\${REGISTRY}/\${IMAGE_NAME}:latest"
