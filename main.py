@@ -119,14 +119,29 @@ async def convert_time(
             # Пробуем использовать переданное значение как IANA timezone name
             try:
                 tz = ZoneInfo(timezone)
-            except Exception:
+            except Exception as e:
+                error_msg = str(e)
+                if "No such file or directory" in error_msg or "zoneinfo" in error_msg.lower():
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Ошибка работы с часовыми поясами. Убедитесь, что tzdata установлен. Ошибка: {error_msg}"
+                    )
                 raise HTTPException(
                     status_code=400,
                     detail=f"Неизвестный часовой пояс: {timezone}. "
                            f"Доступные города: {', '.join(set([k for k in TIMEZONE_MAP.keys() if not '/' in k]))}"
                 )
         else:
-            tz = ZoneInfo(tz_name)
+            try:
+                tz = ZoneInfo(tz_name)
+            except Exception as e:
+                error_msg = str(e)
+                if "No such file or directory" in error_msg or "zoneinfo" in error_msg.lower():
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Ошибка работы с часовыми поясами. Убедитесь, что tzdata установлен. Ошибка: {error_msg}"
+                    )
+                raise
         
         # Конвертируем в указанный часовой пояс
         converted_time = utc_time.astimezone(tz)
