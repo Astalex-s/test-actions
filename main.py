@@ -12,6 +12,7 @@ async def root() -> Dict[str, str]:
         "message": "Server Time API",
         "endpoints": {
             "/time": "Get current server time",
+            "/date": "Get current server date",
             "/": "API information"
         }
     }
@@ -25,5 +26,20 @@ async def get_server_time() -> Dict[str, str]:
         "server_time": current_time.isoformat(),
         "timestamp": current_time.timestamp(),
         "formatted_time": current_time.strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+
+@app.get("/date")
+async def get_server_date() -> Dict[str, str]:
+    """Возвращает текущую дату сервера"""
+    current_date = datetime.now()
+    return {
+        "date": current_date.strftime("%Y-%m-%d"),
+        "day": current_date.strftime("%A"),
+        "day_number": current_date.strftime("%d"),
+        "month": current_date.strftime("%B"),
+        "month_number": current_date.strftime("%m"),
+        "year": current_date.strftime("%Y"),
+        "iso_date": current_date.date().isoformat()
     }
 
